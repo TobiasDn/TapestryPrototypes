@@ -234,44 +234,54 @@ class Line {
 	
 	render() {
 	  strokeWeight(5);
-	  
 	  if (this.active) {
 		this.points[this.points.length - 1] = createVector(mouseX, mouseY);
 	  
 		let pointA = this.points[this.points.length - 2];
 		let pointB = this.points[this.points.length - 1];
 	  
-		let collided = false;
-		
+		let collisions = []; // List to store all the collisions
+	  
 		for (let i = 0; i < pegs.length; i++) {
 		  let peg = pegs[i];
 		  if (peg.isLineColliding(pointA.x, pointA.y, pointB.x, pointB.y)) {
 			let closestPoint = peg.getClosestPoint(pointA.x, pointA.y, pointB.x, pointB.y);
-				collided = true;
-				this.points[this.points.length - 1] = createVector(closestPoint.x, closestPoint.y);
-				this.points.push(createVector(mouseX, mouseY));
+			collisions.push({
+			  peg: peg,
+			  distance: dist(pointA.x, pointA.y, closestPoint.x, closestPoint.y)
+			});
 		  }
 		}
 	  
-		if (!collided && this.points.length > 2)
-		{
-			pointA = this.points[this.points.length - 3];
-
-		for (let i = 0; i < pegs.length; i++) {
+		// Sort collisions by distance from pointA
+		collisions.sort((a, b) => a.distance - b.distance);
+	  
+		for (let collision of collisions) {
+		  let peg = collision.peg;
+		  let closestPoint = peg.getClosestPoint(pointA.x, pointA.y, pointB.x, pointB.y);
+		  this.points[this.points.length - 1] = createVector(closestPoint.x, closestPoint.y);
+		  this.points.push(createVector(mouseX, mouseY));
+		}
+	  
+		if (!collisions.length && this.points.length > 2) {
+		  pointA = this.points[this.points.length - 3];
+	  
+		  for (let i = 0; i < pegs.length; i++) {
 			let peg = pegs[i];
 			if (peg.isLineColliding(pointA.x, pointA.y, pointB.x, pointB.y)) {
-				  collided = true;
+			  collisions.push({
+				peg: peg,
+				distance: 0 // Assign a default distance if collision occurred
+			  });
 			}
 		  }
-
-
-		  if (!collided)
-		  {	
-			this.points.splice(-2, 1);	
-
+	  
+		  if (!collisions.length) {
+			this.points.splice(-2, 1);
 		  }
 		}
-	}
+	  }
+	  
 
 			    // Calculate the distance between the previous and current mouse positions
 				let distance = dist(this.previousMousePos.x, this.previousMousePos.y, mouseX, mouseY);
@@ -279,7 +289,7 @@ class Line {
 				// Add new thread point to the array if the distance is greater than or equal to 20
 				if (distance >= 5) {
 				  let currentLength = calculateCombinedLinesLength(this.points);
-				  let targetPoint = getPointAtPosition(this.points, currentLength - 5);
+				  let targetPoint = getPointAtPosition(this.points, currentLength);
 
 				  if (targetPoint)
 				  {
@@ -322,10 +332,13 @@ class Line {
 
 	  
 	  
-	  stroke(this.lineColor);
-	  for (let i = 0; i < this.points.length - 1; i++) {
-	//	line(this.points[i].x, this.points[i].y, this.points[i + 1].x, this.points[i + 1].y);
+	  stroke(0, 0, 0);
+	 for (let i = 1; i < this.points.length ; i++) {
+		//let previousPoint = this.points[i - 1];
+		//let currentPoint = this.points[i];
+		//line(previousPoint.x, previousPoint.y, currentPoint.x, currentPoint.y);
 	  }
+	  stroke(this.lineColor);
 
 	  				// Draw lines between thread points
 					  for (let i = 1; i < this.threadPoints.length; i++) {
@@ -333,7 +346,14 @@ class Line {
 						let currentPoint = this.threadPoints[i].getPosition();
 						line(previousPoint.x, previousPoint.y, currentPoint.x, currentPoint.y);
 					  }
+
+
+
+					  
 	}
+
+
+
   }
   
 
@@ -386,38 +406,6 @@ class Line {
   }
 
 
-
-function calculateCombinedLinesLength(points) {
-	let length = 0;
-	for (let i = 0; i < points.length - 1; i++) {
-	  const p1 = points[i];
-	  const p2 = points[i + 1];
-	  length += p5.Vector.dist(p1, p2);
-	}
-	return length;
-  }
-  
-  function getPointAtPosition(points, position) {
-	let length = 0;
-	for (let i = 0; i < points.length - 1; i++) {
-	  const p1 = points[i];
-	  const p2 = points[i + 1];
-	  const segmentLength = p5.Vector.dist(p1, p2);
-  
-	  if (position >= length && position <= length + segmentLength) {
-		const t = (position - length) / segmentLength;
-		const point = p5.Vector.lerp(p1, p2, t);
-		return point;
-	  }
-  
-	  length += segmentLength;
-	}
-  
-	// If position is beyond the length of combined lines, return null or handle as needed
-	return null;
-  }
-
-
 class ButtonLayout {
   constructor(x, y, label) {
     this.x = x;
@@ -449,237 +437,6 @@ class ButtonLayout {
   }
 }
 
-// Helper functions
-/// Line-Circle Collision Check
-// Calculate the Euclidean distance between two points
-  // Line-Circle Collision Check
-  function isLineCollidingWithCircle(x1, y1, x2, y2, cx, cy, radius) {
-	// Get the closest point on the line to the circle center
-	const closestPoint = getClosestPointOnLine(x1, y1, x2, y2, cx, cy);
-  
-	// Check if the closest point is within the line segment
-	if (isPointOnLineSegment(x1, y1, x2, y2, closestPoint.x, closestPoint.y)) {
-	  // Calculate the distance between the closest point and the circle center
-	  const distance = dist(closestPoint.x, closestPoint.y, cx, cy);
-  
-	  // Check if the distance is less than or equal to the circle radius
-	  if (distance <= radius) {
-		// Line is colliding with the circle
-		return true;
-	  }
-	}
-  
-	// Line is not colliding with the circle
-	return false;
-  }
-  
-  // Get the closest point on a line to another point
-  function getClosestPointOnLine(x1, y1, x2, y2, cx, cy) {
-	const lineLengthSquared = (x1 - x2) ** 2 + (y1 - y2) ** 2;
-  
-	if (lineLengthSquared === 0) {
-	  return { x: x1, y: y1 };
-	}
-  
-	const t = ((cx - x1) * (x2 - x1) + (cy - y1) * (y2 - y1)) / lineLengthSquared;
-	const tClamped = Math.max(0, Math.min(t, 1));
-  
-	const closestX = x1 + tClamped * (x2 - x1);
-	const closestY = y1 + tClamped * (y2 - y1);
-  
-	return createVector(closestX, closestY);
-  }
-  
-  // Check if a point is on a line segment
-  function isPointOnLineSegment(x1, y1, x2, y2, px, py) {
-	const d1 = dist(px, py, x1, y1);
-	const d2 = dist(px, py, x2, y2);
-	const lineLength = dist(x1, y1, x2, y2);
-	const threshold = 0.1;
-  
-	if (Math.abs(d1 + d2 - lineLength) < threshold) {
-	  return true;
-	}
-  
-	return false;
-  }
-  
-  function getRelativePositionOnLine(x1, y1, x2, y2, cx, cy) {
-	const closestPoint = getClosestPointOnLine(x1, y1, x2, y2, cx, cy);
-	const lineLength = dist(x1, y1, x2, y2);
-	const pointDistanceFromStart = dist(x1, y1, closestPoint.x, closestPoint.y);
-	
-	return pointDistanceFromStart / lineLength;
-  }
+
   
 
-  function setLayout1() {
-	pegs = [];
-	endPoints = [];
-	lines = [];
-  
-	// Define the positions of pegs for Layout 1
-	pegs.push(new Peg(400, 400));
-	pegs.push(new Peg(300, 400));
-	pegs.push(new Peg(500, 400));
-	pegs.push(new Peg(400, 300));
-	pegs.push(new Peg(400, 500));
-  
-	// Define the positions of endpoints for Layout 1
-	let centerX = width / 2;
-	let centerY = height / 2;
-	let radius = 200;
-	let numEndpoints = 6;
-	let angleIncrement = TWO_PI / numEndpoints;
-  
-	for (let i = 0; i < numEndpoints; i++) {
-	  let angle = i * angleIncrement;
-	  let x = centerX + (radius * cos(angle));
-	  let y = centerY + (radius * sin(angle));
-	  endPoints.push(new EndPoint(x, y));
-	}
-  }
-
-// Layout functions
-function setLayout6() {
-  pegs = [];
-  endPoints = [];
-  lines = [];
-
-  pegs.push(new Peg(200, 200));
-  pegs.push(new Peg(400, 200));
-  pegs.push(new Peg(400, 400));
-
-  pegs.push(new Peg(600, 200));
-
-  endPoints.push(new EndPoint(400, 600));
-}
-
-function setLayout2() {
-  pegs = [];
-  endPoints = [];
-  lines = [];
-
-
-  pegs.push(new Peg(200, 300));
-  pegs.push(new Peg(200, 500));
-  pegs.push(new Peg(400, 200));
-  pegs.push(new Peg(400, 400));
-  pegs.push(new Peg(400, 600));
-  pegs.push(new Peg(600, 300));
-  pegs.push(new Peg(600, 500));
-
-  endPoints.push(new EndPoint(400, 100));
-  endPoints.push(new EndPoint(400, 700));
-}
-
-function setLayout3() {
-	pegs = [];
-	endPoints = [];
-  
-	// Define the positions of pegs for Layout 5
-	pegs.push(new Peg(200, 300));
-	pegs.push(new Peg(400, 300));
-	pegs.push(new Peg(600, 300));
-	pegs.push(new Peg(200, 500));
-	pegs.push(new Peg(400, 500));
-	pegs.push(new Peg(600, 500));
-  
-	// Define the positions of endpoints for Layout 5
-	let numEndpoints = 6;
-	let spacingX = width / (numEndpoints + 1);
-	let spacingY = 100;
-  
-	for (let i = 0; i < numEndpoints; i++) {
-	  let x = (i + 1) * spacingX;
-	  let y = height - spacingY;
-	  endPoints.push(new EndPoint(x, y));
-	}
-  }
-  
-
-  function setLayout4() {
-	pegs = [];
-	endPoints = [];
-	lines = [];
-  
-	// Define the positions of pegs for Layout 3
-	let centerX = width / 2;
-	let centerY = height / 2;
-	let radius = 200;
-	let numPegs = 6;
-	let angleIncrement = TWO_PI / numPegs;
-  
-	for (let i = 0; i < numPegs; i++) {
-	  let angle = i * angleIncrement;
-	  let x = centerX + radius * cos(angle);
-	  let y = centerY + radius * sin(angle);
-	  pegs.push(new Peg(x, y));
-	}
-  
-	// Define the positions of endpoints for Layout 3
-	let hexagonRadius = radius / 2;
-	let numEndpoints = 6;
-	let endpointAngleIncrement = TWO_PI / numEndpoints;
-  
-	for (let i = 0; i < numEndpoints; i++) {
-	  let angle = i * endpointAngleIncrement;
-	  let x = centerX + hexagonRadius * cos(angle);
-	  let y = centerY + hexagonRadius * sin(angle);
-	  endPoints.push(new EndPoint(x, y));
-	}
-  }
-  
-  function setLayout5() {
-	pegs = [];
-	endPoints = [];
-	lines = [];
-  
-	// Define the positions of pegs for Layout 4
-	pegs.push(new Peg(300, 400));
-	pegs.push(new Peg(500, 400));
-	pegs.push(new Peg(400, 300));
-	pegs.push(new Peg(300, 600));
-	pegs.push(new Peg(500, 600));
-	pegs.push(new Peg(200, 200));
-	pegs.push(new Peg(600, 200));
-  
-	// Define the positions of endpoints for Layout 4
-	let centerX = width / 2;
-	let centerY = height / 2;
-	let radius = 200;
-	let numEndpoints = 4;
-	let angleIncrement = TWO_PI / numEndpoints;
-  
-	for (let i = 0; i < numEndpoints; i++) {
-	  let angle = i * angleIncrement;
-	  let x = centerX + radius * cos(angle);
-	  let y = centerY + radius * sin(angle);
-	  endPoints.push(new EndPoint(x, y));
-	}
-  }
-  
-
-function setLayout7() {
-	pegs = [];
-	endPoints = [];
-  
-	// Define the positions of pegs for the custom layout
-	let numPegsX = 6;
-	let numPegsY = 6;
-	let spacingX = width / (numPegsX + 1);
-	let spacingY = height / (numPegsY + 2);
-  
-	for (let i = 1; i <= numPegsX; i++) {
-	  for (let j = 1; j <= numPegsY; j++) {
-		let x = i * spacingX;
-		let y = j * spacingY;
-		pegs.push(new Peg(x, y));
-	  }
-	}
-  
-	// Define the position of the endpoint for the custom layout
-	let endpointX = width / 2;
-	let endpointY = height - spacingY;
-	endPoints.push(new EndPoint(endpointX, endpointY));
-  }
