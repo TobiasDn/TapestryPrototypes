@@ -91,3 +91,28 @@ function calculateCombinedLinesLength(points) {
 	// If position is beyond the length of combined lines, return null or handle as needed
 	return null;
   }
+
+  function determineWindingDirection(vectors, center) {
+	let sum = 0;
+  
+	for (let i = 0; i < vectors.length; i++) {
+	  let current = vectors[i];
+	  let next = vectors[(i + 1) % vectors.length];
+  
+	  let a = current.x - center.x;
+	  let b = current.y - center.y;
+	  let c = next.x - center.x;
+	  let d = next.y - center.y;
+  
+	  sum += (a * d) - (b * c);
+	}
+  
+	if (sum > 0) {
+	return true;
+	} else if (sum < 0) {
+	  return false;
+	} else {
+	 return null;
+	}
+  }
+
