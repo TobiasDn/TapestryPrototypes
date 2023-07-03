@@ -16,6 +16,20 @@ let interpolationSpeed;
 let testGlyph; 
 let targetLine;
 
+let pegTimer = 0;
+let showInteractionMarkers = true;
+
+var lastUpdate = Date.now();
+var myInterval = setInterval(tick, 0);
+var dt = 0;
+var drawing;
+
+function tick() {
+    var now = Date.now();
+    dt = (now - lastUpdate) * 0.001;
+    lastUpdate = now;
+}
+
 function setup() {
   createCanvas(800, 800);
   colorMode(HSB);
@@ -65,6 +79,28 @@ function draw() {
   buttonLayout6.render();
   buttonLayout7.render();
 
+  for (let i = 0; i < endPoints.length; i++) {
+    if (endPoints[i].isMouseOver()) {
+      showInteractionMarkers = false;
+    }
+  }
+
+  if (!drawing)
+  {
+    showInteractionMarkers = true;
+
+    for (let i = 0; i < endPoints.length; i++) {
+      if (endPoints[i].isMouseOver()) {
+        showInteractionMarkers = false;
+      }
+    }
+  }
+  else
+  {
+        showInteractionMarkers = false;
+
+  }
+
   if (targetLine)
     drawLineMiniature(targetLine, 800, 800, 200);
 
@@ -108,6 +144,7 @@ function mousePressed() {
       let line = new Line(endPoints[i].position.x, endPoints[i].position.y);
       line.endPoints.push(i);
       lines.push(line);
+      drawing = true;
       return;
     }
   }
@@ -146,6 +183,8 @@ function mouseReleased() {
   }
 
   let lineWasValid = false;
+
+  drawing = false;
 
   for (let i = 0; i < endPoints.length; i++) {
     if (endPoints[i].isMouseOver()) {
@@ -188,13 +227,16 @@ class Peg {
     this.pegSize = 30;
     this.pegCollisionSize = 30;
     this.fill = 255;
+    
   }
 
   render() {
     stroke(0);
     strokeWeight(5);
+
     fill(this.fill, this.fill, this.fill);
     circle(this.position.x, this.position.y, this.pegSize);
+
   }
 
   isLineColliding(x, y, x1, y1) {
@@ -247,17 +289,37 @@ class EndPoint {
     this.position = createVector(x, y);
     this.pegSize = 20;
     this.pegCollisionSize = 30;
+    this.interactionMarkerSize = 70;
+    this.interactionMarkerGrowSpeed = 50;
+    this.animationTimer = 0;
+
   }
 
   render() {
-    stroke(0);
     strokeWeight(5);
+    this.animationTimer += dt;
+
+    let animationProgression = ((this.animationTimer * this.interactionMarkerGrowSpeed) % this.interactionMarkerSize) / this.interactionMarkerSize;
+    let currentMarkerSize = this.interactionMarkerSize * animationProgression;
+
+
+    if (showInteractionMarkers || this.isMouseOver())
+    {
+    noFill();
+    stroke(0,0,0, 0.5 - (animationProgression * 0.5));
+    circle(this.position.x, this.position.y, currentMarkerSize);
+    }
+
     fill(200, 100, 100);
+    stroke(0);
+
 
     if (this.isMouseOver()) {
       circle(this.position.x, this.position.y, this.pegSize * 2);
+      
     } else {
       circle(this.position.x, this.position.y, this.pegSize);
+      
     }
   }
 
@@ -451,11 +513,6 @@ class Line {
           let closestPoint = peg.getClosestPoint(pointA.x, pointA.y, pointB.x, pointB.y);
 
           let clockWise = determineWindingDirection([pointA, closestPoint, pointB], peg.position);
-
-          if (clockWise === true)
-            peg.fill = 0;
-          else if (clockWise === false)
-            peg.fill = 125;
 
           collisions.push({
             peg: peg,
