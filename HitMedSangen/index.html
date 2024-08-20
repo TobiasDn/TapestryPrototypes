@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hit med BABY!</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f2c2e1;
+            flex-direction: column;
+            font-family: "Anton", sans-serif;
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        .grid-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            position: absolute;
+        }
+
+        .grid {
+            display: flex;
+            position: absolute;
+            margin: auto;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 20px;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: opacity 0.5s, transform 0.5s;
+            pointer-events: none;
+        }
+
+        .grid.active {
+            display: flex;
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: all;
+        }
+
+        .card {
+            width: 150px;
+            height: 200px;
+            perspective: 1000px;
+            animation: rotateScale 10s ease-in-out forwards;
+            animation-iteration-count: infinite;
+        }
+
+        .card:nth-child(1) {
+            animation-delay: 0s;
+        }
+        .card:nth-child(2) {
+            animation-delay: 0.5s;
+        }
+        .card:nth-child(3) {
+            animation-delay: 1s;
+        }
+        .card:nth-child(4) {
+            animation-delay: 1.5s;
+        }
+        .card:nth-child(5) {
+            animation-delay: 2s;
+        }
+        .card:nth-child(6) {
+            animation-delay: 2.5s;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            cursor: pointer;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            transform-origin: center;
+        }
+
+
+        /* Initialize a counter */
+        .grid {
+            counter-reset: card-index;
+        }
+
+        /* Add keyframes for rotation and scaling animation */
+        @keyframes rotateScale {
+            0% {
+                transform: rotate(0deg) scale(1);
+            }
+            5% {
+                transform: rotate(5deg) scale(1.05);
+            }
+            10% {
+                transform: rotate(0deg) scale(1);
+            }
+        }
+
+        .card-back > img {
+            width: 100%;
+
+        }
+
+        .card-front, .card-back{
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24vh;
+            color: #fff;
+            border-radius: 10px;
+            box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+        }
+
+        .card-front
+        {
+            font-size: 24vh;
+        }
+
+        .card-back 
+        {
+            font-size: 4.5vh;
+        }
+
+        .card-front {
+            background-color: #333;
+        }
+
+        .card-back {
+            background-color: #ff6f61;
+            transform: rotateY(180deg);
+        }
+
+        .card-inner.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .pagination {
+            display: flex;
+            gap: 10px;
+            position: absolute;
+            bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #333;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #musicButton {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+        }
+
+        .pagination button:hover {
+            background-color: #ff6f61;
+        }
+
+        .pagination button:disabled {
+            background-color: #bbb;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-container">
+        <div class="grid" id="page1"></div>
+        <div class="grid" id="page2"></div>
+        <div class="grid" id="page3"></div>
+        <div class="grid" id="page4"></div>
+        <div class="grid" id="page5"></div>
+
+
+    </div>
+
+    <div class="pagination">
+        <button id="prevPage" disabled>Forrige</button>
+        <button id="nextPage">Næste</button>
+    </div>
+
+    <button id="musicButton">Musik</button>
+
+
+    <script>
+        // Example JavaScript objects to generate the cards
+        const song1 = [
+            { frontContent: '1', backContent: '<p>sæt</p>', backColor: '#cf95bf' },
+            { frontContent: '2', backContent: '<p>dig</p>', backColor: '#cf95bf' },
+            { frontContent: '3', backContent: '<p>ved</p>', backColor: '#cf95bf' },
+            { frontContent: '4', backContent: '<p>min</p>', backColor: '#d61609' },
+            { frontContent: '5', backContent: '<p>pude</p>', backColor: '#cf95bf' },
+            { frontContent: '6', backContent: '<p>mor</p>', backColor: '#d61609' }
+        ];
+
+        const song2 = [
+            { frontContent: '1', backContent: '<p>Busters sang</p>', backColor: '#cf95bf' },
+            { frontContent: '2', backContent: '<p>Mit aller-<br/>farligste sted</p>', backColor: '#cf95bf' }
+
+        ];
+
+        const song3 = [
+            { frontContent: '1', backContent: '<p>Vi</p>', backColor: '#cf95bf' },
+            { frontContent: '2', backContent: '<p>giver</p>', backColor: '#d61609' },
+            { frontContent: '3', backContent: '<p>regnen</p>', backColor: '#cf95bf' },
+            { frontContent: '4', backContent: '<p>et</p>', backColor: '#cf95bf' },
+            { frontContent: '5', backContent: '<p>brusebad</p>', backColor: '#d61609' }
+        ];
+
+        const song4 = [
+            { frontContent: '1', backContent: '<p>Den</p>', backColor: '#cf95bf' },
+            { frontContent: '2', backContent: '<p>bruger</p>', backColor: '#cf95bf' },
+            { frontContent: '3', backContent: '<p>nul</p>', backColor: '#d61609' },
+            { frontContent: '4', backContent: '<p>benzin</p>', backColor: '#cf95bf' }
+        ];
+
+        const song5 = [
+            { frontContent: '1', backContent: '<img src="Fire.jfif">', backColor: '#cf95bf' },
+            { frontContent: '2', backContent: '<img src="Sok.png">', backColor: '#cf95bf' },
+            { frontContent: '3', backContent: '<img src="Ingen.png">', backColor: '#cf95bf' },
+            { frontContent: '4', backContent: '<img src="Fod.jfif">', backColor: '#cf95bf' }
+        ];
+
+        const pages = [song1, song2, song3, song4];
+        let currentPage = 0;
+
+        const gridContainers = document.querySelectorAll('.grid');
+
+        // Function to generate cards
+        function generateCards(grid, cards) {
+            cards.forEach(card => {
+                const cardElement = document.createElement('div');
+                cardElement.classList.add('card');
+
+                const cardInner = document.createElement('div');
+                cardInner.classList.add('card-inner');
+
+                const cardFront = document.createElement('div');
+                cardFront.classList.add('card-front');
+                cardFront.style.backgroundColor = card.frontColor || '#333';
+                cardFront.innerHTML = card.frontContent;
+
+                const cardBack = document.createElement('div');
+                cardBack.classList.add('card-back');
+                cardBack.style.backgroundColor = card.backColor || '#ff6f61';
+                cardBack.innerHTML = card.backContent;
+
+                cardInner.appendChild(cardFront);
+                cardInner.appendChild(cardBack);
+                cardElement.appendChild(cardInner);
+                grid.appendChild(cardElement);
+            });
+        }
+
+        pages.forEach((pageCards, index) => {
+            generateCards(gridContainers[index], pageCards);
+        });
+
+
+        // Add flip functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            showPage(currentPage);
+
+            const prevButton = document.getElementById('prevPage');
+            const nextButton = document.getElementById('nextPage');
+            const musicButton = document.getElementById('musicButton');
+
+
+            prevButton.addEventListener('click', () => {
+                if (currentPage > 0) {
+                    currentPage--;
+                    showPage(currentPage);
+                }
+            });
+
+            nextButton.addEventListener('click', () => {
+                if (currentPage < pages.length - 1) {
+                    currentPage++;
+                    showPage(currentPage);
+                }
+            });
+
+            musicButton.addEventListener('click', () => {
+                playMusic();
+            });
+
+                        // Add flip functionality for the current page's cards
+            const cards = document.querySelectorAll(`.card-inner`);
+            cards.forEach(card => {
+                card.addEventListener('click', () => {
+                    card.classList.toggle('flipped');
+                    
+                    // Check if the back color is #d61609
+                    const backColor = card.querySelector('.card-back').style.backgroundColor;
+                    if (backColor === 'rgb(214, 22, 9)' && card.classList.contains('flipped')) { // 'rgb(214, 22, 9)' is the equivalent of '#d61609'
+                        playWrongAnswerSound();
+                    }
+                });
+            });
+        });
+
+        function showPage(index) {
+            gridContainers.forEach((grid, i) => {
+                grid.classList.remove('active');
+                if (i === index) {
+                    grid.classList.add('active');
+                }
+            });
+
+            document.getElementById('prevPage').disabled = index === 0;
+            document.getElementById('nextPage').disabled = index === pages.length - 1;
+        }
+
+        // Function to play the wrong answer sound
+        function playWrongAnswerSound() {
+            const audio = new Audio('WrongAnswer.wav');
+            audio.play();
+        }
+
+        function playMusic() {
+            const audio = new Audio('Music.wav');
+            audio.play();
+        }
+
+    </script>
+</body>
+</html>
